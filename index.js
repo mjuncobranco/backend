@@ -27,6 +27,14 @@ app.get("/testing",(req, res)=> {
   })
 });
 
+//importing routes from /route:
+const UserRoutes = require("./routes/user");
+// //using routes:
+app.use("/api/users", UserRoutes);
+//testing:
+
+
+
 app.listen(process.env.PORT || 5000, ()=> {
   console.log(`Server running at port ${process.env.PORT}`);
 });
