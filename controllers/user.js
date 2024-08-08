@@ -1,8 +1,9 @@
-const mongoose = require("mongoose");
 const User = require("../models/User");
 const { validateData } = require("../helpers/validateData");
 const bcrypt = require("bcrypt");
+const jwt = require("../helpers/jwt");
 
+//Register user
 const register = async (req, res) => {
   //checking for empty required inputs
   let params = req.body;
@@ -43,9 +44,8 @@ const register = async (req, res) => {
         message: "Invalid data. Please review your input.",
       });
     }
-    //cifrar password con convirtiendola en hash con bcrypt
+    //encrypting the password with bcrypt before saving user
     let pwd = await bcrypt.hash(params.password, 10);
-    //guardo en password hasheado(pwd) directamente en password
     params.password = pwd;
     //Save new user in db
 
@@ -77,4 +77,60 @@ const register = async (req, res) => {
   }
 };
 
-module.exports = { register };
+//Login user
+const login = async (req, res) => {
+  //get req.body data
+let params = req.body;
+//email|pass empty = missing data
+if(!params.email || !params.password){
+  return res.status(400).send({
+    status: "error",
+    message: "missing data"
+  })
+}
+//search user by email on db
+try {
+let user= await User.findOne({email: params.email})
+.exec();
+
+if(!user){
+  return res.status(400).send({
+    status: "error",
+    message: "No user found"
+  })
+}
+
+//try to match password entered with pass in db with bcrypt compareSync:
+let pwd= bcrypt.compareSync(params.password, user.password);
+//si el password es incorrecto lanzar error
+if(!pwd){
+  return res.status(400).send({
+    status: "error",
+    message: "Unable to login, please try again."
+  })
+}
+//Get token
+const token = jwt.createToken(user);
+
+//if pass is correct, login user and show user data
+return res.status(200).json({
+  status: "success",
+  message: "You've been authenticated successfully!",
+  token,
+  user:{
+    id: user._id,
+    name: user.name,
+    nick: user.nick,
+    role: user.role,
+    
+  }
+
+})
+} catch (error) {
+ return res.status(500).send({
+    status: "error",
+    message: "Login has failed"
+  })
+}
+}
+module.exports = { register, login };
