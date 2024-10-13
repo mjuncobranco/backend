@@ -29,9 +29,11 @@ app.get("/testing",(req, res)=> {
 
 //importing routes from /route:
 const UserRoutes = require("./routes/user");
+
+const MovieRoutes = require("./routes/movie");
 // //using routes:
 app.use("/api/users", UserRoutes);
-//testing:
+app.use("/api", MovieRoutes);
 
 
 
