@@ -30,6 +30,7 @@ const getMovieDetails = async (req, res) => {
   try {
     // Buscar la película por ID
     const movie = await Movie.findById(movieId);
+
     
     if (!movie) {
       return res.status(404).json({ status: "error", message: "Movie not found." });
@@ -65,17 +66,26 @@ const addMovie = async (req, res) => {
     }
 
     // Obtener los datos de la nueva película del cuerpo de la solicitud
-    const newMovie = req.body;
+    let {title, director, description, year,actors,category,rating,trailer,image} = req.body;
+//limpiar con trim los espacios en blanco de los campos
+ title = title.trim();
+ director = director.trim();
+ description = description.trim();
+ actors = actors.trim();
+ category = category.trim();
+ if(trailer) trailer = trailer.trim();
+ if(image) image.trim();
 
     // Verificar que todos los campos obligatorios estén presentes
     if (
-      !newMovie.title ||
-      !newMovie.director ||
-      !newMovie.description ||
-      !newMovie.year ||
-      !newMovie.actors ||
-      !newMovie.category ||
-      !newMovie.rating
+      !title ||
+      !director ||
+      !description ||
+      !year ||
+      !actors ||
+    !category ||
+    !rating
+    
     ) {
       return res.status(400).json({
         status: "error",
@@ -84,7 +94,19 @@ const addMovie = async (req, res) => {
     }
 
     // Crear una nueva instancia de la película
-    const movie = new Movie(newMovie);
+    const movie = new Movie({
+      title,
+      director,
+      description,
+      year,
+      actors,
+      category,
+      rating,
+      trailer,
+      image,
+    }
+
+    );
 
     // Intentar guardar la nueva película en la base de datos
     const movieSaved = await movie.save();
@@ -123,7 +145,7 @@ const updateMovieData = async (req, res) => {
     }
 
     const movieId = req.body.movieId; // Obtener el ID de la película desde el cuerpo de la solicitud
-    const updatedData = req.body; // Obtener los datos actualizados
+    let updatedData = req.body; // Obtener los datos actualizados
 
     // Verificar si se proporcionó el ID de la película
     if (!movieId) {
@@ -132,6 +154,17 @@ const updateMovieData = async (req, res) => {
         message: "Movie ID is required.",
       });
     }
+    // Aplicar trim() a los campos antes de la actualización
+    updatedData = {
+      ...updatedData,
+      title: updatedData.title ? updatedData.title.trim() : updatedData.title,
+      director: updatedData.director ? updatedData.director.trim() : updatedData.director,
+      description: updatedData.description ? updatedData.description.trim() : updatedData.description,
+      actors: updatedData.actors ? updatedData.actors.trim() : updatedData.actors,
+      category: updatedData.category ? updatedData.category.trim() : updatedData.category,
+      trailer: updatedData.trailer ? updatedData.trailer.trim() : updatedData.trailer,
+      image: updatedData.image ? updatedData.image.trim() : updatedData.image,
+    };
 
     // Intentar encontrar y actualizar la película por ID
     const movie = await Movie.findByIdAndUpdate(movieId, updatedData, { new: true });

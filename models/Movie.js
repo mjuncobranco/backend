@@ -34,7 +34,7 @@ const MovieSchema = Schema(
     },
     trailer:{
       type: String,
-      default:"https://www.youtube.com"
+      default: "https://www.youtube.com"
     },
     image: {
       type: String,
@@ -42,7 +42,9 @@ const MovieSchema = Schema(
     },
    
   },
-  { timestamps: true }
+  { timestamps: true
+   
+   }
 );
 
 module.exports = model("Movie", MovieSchema);
