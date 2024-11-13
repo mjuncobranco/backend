@@ -1,17 +1,14 @@
 const mongoose = require("mongoose");
 require("dotenv").config();
-mongoose.set("strictQuery",true);
 
-const connection= async() => {
+const connection = async () => {
   try {
-    
     await mongoose.connect(process.env.DATABASE_URL);
-    console.log("You've successfully connected to db movie_app");
-   
+    console.log("Connected to MongoDB Atlas successfully");
   } catch (error) {
-    console.log(error);
-    throw new Error("Unable to connect to db movie_app")
+    console.error("Error connecting to MongoDB:", error);
+    throw new Error("Unable to connect to MongoDB Atlas");
   }
-}
+};
 
-module.exports = {connection}
+module.exports = { connection };
