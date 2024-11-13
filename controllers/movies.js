@@ -61,7 +61,7 @@ const addMovie = async (req, res) => {
     if (userRole !== 'admin') {
       return res.status(403).json({
         status: "error",
-        message: "Access denied: Only admin have permission to add new mo",
+        message: "Access denied: Only admin have permission to add new movie.",
       });
     }
 
@@ -71,6 +71,7 @@ const addMovie = async (req, res) => {
  title = title.trim();
  director = director.trim();
  description = description.trim();
+ year = year.trim();
  actors = actors.trim();
  category = category.trim();
  if(trailer) trailer = trailer.trim();
@@ -160,6 +161,7 @@ const updateMovieData = async (req, res) => {
       title: updatedData.title ? updatedData.title.trim() : updatedData.title,
       director: updatedData.director ? updatedData.director.trim() : updatedData.director,
       description: updatedData.description ? updatedData.description.trim() : updatedData.description,
+      year: updatedData.year ? updatedData.year.trim() : updatedData.year,
       actors: updatedData.actors ? updatedData.actors.trim() : updatedData.actors,
       category: updatedData.category ? updatedData.category.trim() : updatedData.category,
       trailer: updatedData.trailer ? updatedData.trailer.trim() : updatedData.trailer,

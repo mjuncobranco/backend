@@ -1,5 +1,8 @@
 const User = require("../models/User");
 const { validateData } = require("../helpers/validateData");
+//importing fs and path 
+const path = require("path");
+const fs= require("fs");
 const bcrypt = require("bcrypt");
 const jwt = require("../helpers/jwt");
 
@@ -143,7 +146,13 @@ return res.status(200).json({
     try {
       const userId = req.user.id; // Obteniendo el ID del usuario desde el token
       const { movieId } = req.body; // Obteniendo el ID de la película desde el cuerpo de la solicitud
-  
+  // Verificar que movieId no esté vacío o inválido
+  if (!movieId || movieId.trim() === "") {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid movie ID.",
+    });
+  }
       // Verificar si la película ya está en la lista de favoritos
       const user = await User.findById(userId);
       if (user.favoriteMovies.includes(movieId)) {
@@ -173,35 +182,50 @@ return res.status(200).json({
 // Eliminar una película de favoritos
 const removeFavoriteMovie = async (req, res) => {
   const userId = req.user.id;
-  const {movieId} = req.body;
+  const { movieId } = req.body;
 
   try {
+    // Verificar que movieId no esté vacío o inválido
+    if (!movieId || movieId.trim() === "") {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid movie ID.",
+      });
+    }
+
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ status: "error", message: "User not found" });
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
     }
 
-    // Verify if movieId is in favoriteMovie list
-    if(!user.favoriteMovies.includes(movieId)){
-      return res.status(400).json({status:"error", message:"Movie not found in favorites."})
+    // Verificar si movieId está en la lista de favoritos
+    if (!user.favoriteMovies.includes(movieId)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Movie not found in favorites.",
+      });
     }
-  //remove movie from favoriteMovie list
+
+    // Eliminar la película de la lista de favoritos
     user.favoriteMovies = user.favoriteMovies.filter(
-      (id)=> id.toString() !== movieId.toString()
+      (id) => id.toString() !== movieId.toString()
     );
-    
+
     await user.save();
 
     return res.status(200).json({
       status: "success",
       message: "Movie removed from favorites",
-      favoriteMovies: user.favoriteMovies
+      favoriteMovies: user.favoriteMovies,
     });
   } catch (error) {
     return res.status(500).json({
       status: "error",
-      message: "Server error: Unable to remove movie from favorites"
+      message: "Server error: Unable to remove movie from favorites",
     });
   }
 };
@@ -265,24 +289,38 @@ const getUserData = async (req, res) => {
     const params = req.body; // Obtenemos los parámetros de la solicitud
   
     try {
-      // Verificar si el email o el nick están siendo actualizados
-      if (params.email || params.nick) {
-        let userFound = await User.find({
-          $or: [
-            { email: params.email ? params.email.toLowerCase() : null },
-            { nick: params.nick ? params.nick.toLowerCase() : null },
-          ],
-          _id: { $ne: userId }, // Asegurarnos de no incluir al propio usuario
-        }).exec();
-  
-        if (userFound.length > 0) {
+          // Limpiar espacios adicionales en los campos de email y nick
+    if (params.email) params.email = params.email.trim();
+    if (params.nick) params.nick = params.nick.trim();
+      //verificar si el email esta siendo actualizado
+      if(params.email){
+        const emailExists = await User.findOne({
+          email: params.email.toLowerCase(),
+          _id:{$ne: userId}
+        })
+        if(emailExists){
           return res.status(409).json({
             status: "error",
-            message: "Existing nick or email. Please enter a new nick or email.",
-          });
+            message: "Existing email. Please enter a new email."
+          })
         }
       }
-  
+      // Verificar si el nick está siendo actualizado
+    if (params.nick) {
+      // Buscar si el nick ya existe en la base de datos para otro usuario
+      const nickExists = await User.findOne({
+        nick: params.nick.toLowerCase(),
+        _id: { $ne: userId }, // Excluir el ID del usuario actual
+      });
+
+      if (nickExists) {
+        return res.status(409).json({
+          status: "error",
+          message: "Existing nick. Please enter a new nick.",
+        });
+      }
+    }
+
       // Validar los datos ingresados
       try {
         validateData(params);
@@ -322,6 +360,43 @@ const getUserData = async (req, res) => {
     }
   };
   
+//change avatar
+const changeAvatar = async (req, res)=>{
+  const userId = req.user.id;
+  try{
+    const user = await User.findById(userId);
+    if(!user){
+      return res.status(404).json({
+        status: "error",
+        message: "User not found"
+    
+      })
+    }
+    // delete old avatar
+  if (user.avatar && user.avatar !== "default.png") {
+    const oldAvatarPath = path.join(__dirname, "..", "public", "avatars", user.avatar);
+    fs.unlink(oldAvatarPath, (err) => {
+      if (err) console.error("Error deleting old avatar:", err);
+    });
+  }
+
+  // Assign new avatar to user and save in db
+  user.avatar = req.file.filename;
+  await user.save();
+
+  return res.status(200).json({
+    status: "success",
+    message: "Avatar updated successfully",
+    avatar: user.avatar,
+  });
+
+}catch(error){
+    return res.status(500).json({
+      status:"error",
+      message:"Server Error"
+    })
+  }
+}
 
 
-module.exports = { register, login, getFavoriteMovies,getUserData, updateUserSettings,addFavoriteMovie,removeFavoriteMovie };
+module.exports = { register, login, getFavoriteMovies,getUserData, updateUserSettings,addFavoriteMovie,removeFavoriteMovie,changeAvatar };
