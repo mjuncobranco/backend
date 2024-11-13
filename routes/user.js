@@ -2,6 +2,7 @@ const express = require("express");
 const UserController = require("../controllers/user");
 const router = express.Router();
 const check = require("../middlewares/auth");
+const upload = require("../middlewares/upload");
 
 
 //register new user
@@ -22,6 +23,8 @@ router.delete("/auth/favorites", check.auth, UserController.removeFavoriteMovie)
 router.get("/auth/settings",check.auth, UserController.getUserData);
 //update user's data settings:
 router.patch("/auth/settings",check.auth, UserController.updateUserSettings);
+// Change avatar
+router.post("/auth/settings/change-avatar", check.auth, upload.single("avatar"), UserController.changeAvatar);
 
 
 
