@@ -31,9 +31,12 @@ app.get("/testing",(req, res)=> {
 const UserRoutes = require("./routes/user");
 
 const MovieRoutes = require("./routes/movie");
+
+const ContactRoutes = require("./routes/contact");
 // //using routes:
 app.use("/api/users", UserRoutes);
 app.use("/api", MovieRoutes);
+app.use("/api/contact", ContactRoutes);
 
 
 
