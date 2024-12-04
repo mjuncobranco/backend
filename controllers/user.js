@@ -44,7 +44,7 @@ const register = async (req, res) => {
     } catch (error) {
       return res.status(400).json({
         status: "error",
-        message: "Invalid data. Please review your input.",
+        message: "Invalid data. Your password must be 8-15 characters in length and include: at least one uppercase letter, one number and one special character.",
       });
     }
     //encrypting the password with bcrypt before saving user
