@@ -1,48 +1,44 @@
 const Movie = require("../models/Movie");
-///home/movies to get all movies
+// /home/movies to get all movies
 const getAllMovies = async (req, res) => {
   try {
     const movies = await Movie.find();
-    res.json({ status: "success", movies: movies });
+    res.json({ status: "success", movies: movies }); //movies fetched successfully
     if (!movies) {
       return res
         .status(400)
-        .json({ status: "error", message: "Error: Unable to find movies." });
+        .json({ status: "error", message: "Error: Unable to find movies." }); //failed to fetch movies sending error message
     }
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        status: "error",
-        message: "Server Error: Unable to find movies.",
-      });
+    //catching error message for request
+    res.status(500).json({
+      status: "error",
+      message: "Server Error: Unable to find movies.",
+    });
   }
 };
 
-
-
-
-  
-//get movie detail  by id
+//get movie detail  by id for movieDetails
 const getMovieDetails = async (req, res) => {
-  const movieId = req.body.movieId; // Obtenemos el ID de la película desde el cuerpo de la solicitud
+  const movieId = req.params.id;
 
   try {
-    // Buscar la película por ID
+    // find movie by movieId
     const movie = await Movie.findById(movieId);
 
-    
     if (!movie) {
-      return res.status(404).json({ status: "error", message: "Movie not found." });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Movie not found." });
     }
-    
-    // Enviar los detalles de la película
+
+    // Sending movie data successfully
     return res.status(200).json({
       status: "success",
       movie: movie,
     });
   } catch (error) {
-    console.error(error.message); // Registro del error en la consola
+    console.error(error.message); //showcasing error on console
     return res.status(500).json({
       status: "error",
       message: "Server error: Unable to process request.",
@@ -54,39 +50,48 @@ const getMovieDetails = async (req, res) => {
 // ADD a new movie
 const addMovie = async (req, res) => {
   try {
-    // Obtener el rol del usuario autenticado
+    // getting authenticated user's role
     const userRole = req.user.role;
 
-    // Verificar si el rol es "admin"
-    if (userRole !== 'admin') {
+    //  Only admin role has permission to execute action
+    if (userRole !== "admin") {
       return res.status(403).json({
         status: "error",
         message: "Access denied: Only admin have permission to add new movie.",
       });
     }
 
-    // Obtener los datos de la nueva película del cuerpo de la solicitud
-    let {title, director, description, year,actors,category,rating,trailer,image} = req.body;
-//limpiar con trim los espacios en blanco de los campos
- title = title.trim();
- director = director.trim();
- description = description.trim();
- year = year.trim();
- actors = actors.trim();
- category = category.trim();
- if(trailer) trailer = trailer.trim();
- if(image) image.trim();
+    //data sent on req.body
+    let {
+      title,
+      director,
+      description,
+      year,
+      actors,
+      category,
+      rating,
+      trailer,
+      image,
+    } = req.body;
+    //trimming inputs
+    title = title.trim();
+    director = director.trim();
+    description = description.trim();
+    year = year.trim();
+    actors = actors.trim();
+    category = category.trim();
+    if (trailer) trailer = trailer.trim();
+    if (image) image.trim();
 
-    // Verificar que todos los campos obligatorios estén presentes
+    // checking if all required fields on movie model are sent
     if (
       !title ||
       !director ||
       !description ||
       !year ||
       !actors ||
-    !category ||
-    !rating
-    
+      !category ||
+      !rating
     ) {
       return res.status(400).json({
         status: "error",
@@ -94,7 +99,7 @@ const addMovie = async (req, res) => {
       });
     }
 
-    // Crear una nueva instancia de la película
+    // Creating a new instance based on movie Model
     const movie = new Movie({
       title,
       director,
@@ -105,12 +110,11 @@ const addMovie = async (req, res) => {
       rating,
       trailer,
       image,
-    }
+    });
 
-    );
-
-    // Intentar guardar la nueva película en la base de datos
+    // trying to save new movie
     const movieSaved = await movie.save();
+    //if saving action has failed, show error
     if (!movieSaved) {
       return res.status(500).json({
         status: "error",
@@ -118,15 +122,14 @@ const addMovie = async (req, res) => {
       });
     }
 
-    // Si la película se guarda correctamente, devolver una respuesta exitosa
+    // saving new movie on db successfully
     return res.status(201).json({
       status: "success",
       message: "The new movie has been added.",
       movie: movieSaved,
     });
-
   } catch (error) {
-    // Manejo de errores
+    // handling error msg
     return res.status(500).json({
       status: "error",
       message: "Error: Unable to save the new movie. Please try again.",
@@ -137,39 +140,51 @@ const addMovie = async (req, res) => {
 //update movie data
 const updateMovieData = async (req, res) => {
   try {
-    // Verificar si el usuario es administrador
-    if (req.user.role !== 'admin') {
+    //  Only admin role has permission to execute action
+    if (req.user.role !== "admin") {
       return res.status(403).json({
         status: "error",
         message: "Access denied: You do not have permission to update a movie.",
       });
     }
 
-    const movieId = req.body.movieId; // Obtener el ID de la película desde el cuerpo de la solicitud
-    let updatedData = req.body; // Obtener los datos actualizados
+    const movieId = req.body.movieId; //  movieId sent on req.body
+    let updatedData = req.body; //  updated data on req.body
 
-    // Verificar si se proporcionó el ID de la película
+    // checking if movieId is provided
     if (!movieId) {
       return res.status(400).json({
         status: "error",
         message: "Movie ID is required.",
       });
     }
-    // Aplicar trim() a los campos antes de la actualización
+    // trimming inputs entered before updating
     updatedData = {
       ...updatedData,
       title: updatedData.title ? updatedData.title.trim() : updatedData.title,
-      director: updatedData.director ? updatedData.director.trim() : updatedData.director,
-      description: updatedData.description ? updatedData.description.trim() : updatedData.description,
+      director: updatedData.director
+        ? updatedData.director.trim()
+        : updatedData.director,
+      description: updatedData.description
+        ? updatedData.description.trim()
+        : updatedData.description,
       year: updatedData.year ? updatedData.year.trim() : updatedData.year,
-      actors: updatedData.actors ? updatedData.actors.trim() : updatedData.actors,
-      category: updatedData.category ? updatedData.category.trim() : updatedData.category,
-      trailer: updatedData.trailer ? updatedData.trailer.trim() : updatedData.trailer,
+      actors: updatedData.actors
+        ? updatedData.actors.trim()
+        : updatedData.actors,
+      category: updatedData.category
+        ? updatedData.category.trim()
+        : updatedData.category,
+      trailer: updatedData.trailer
+        ? updatedData.trailer.trim()
+        : updatedData.trailer,
       image: updatedData.image ? updatedData.image.trim() : updatedData.image,
     };
 
-    // Intentar encontrar y actualizar la película por ID
-    const movie = await Movie.findByIdAndUpdate(movieId, updatedData, { new: true });
+    // find by movieId and update movie's data on db
+    const movie = await Movie.findByIdAndUpdate(movieId, updatedData, {
+      new: true,
+    });
 
     if (!movie) {
       return res.status(404).json({
@@ -177,15 +192,14 @@ const updateMovieData = async (req, res) => {
         message: "Movie not found.",
       });
     }
-
+    //update's successfull
     return res.status(200).json({
       status: "success",
       message: "Movie updated successfully!",
       movie,
     });
-
   } catch (error) {
-    console.error(error.message); // Registrar el error en la consola
+    console.error(error.message); // showcasing error on console
     return res.status(500).json({
       status: "error",
       message: "Unable to process request.",
@@ -196,17 +210,17 @@ const updateMovieData = async (req, res) => {
 //delete a movie by id
 const deleteMovie = async (req, res) => {
   try {
-    // Verificar si el usuario es administrador
-    if (req.user.role !== 'admin') {
+    //  Only admin role has permission to execute action
+    if (req.user.role !== "admin") {
       return res.status(403).json({
         status: "error",
         message: "Access denied: You do not have permission to delete a movie.",
       });
     }
 
-    const movieId = req.body.movieId; // Obtener el ID de la película desde el cuerpo de la solicitud
+    const movieId = req.body.movieId; // getting movieId from req.body
 
-    // Verificar si se proporcionó el ID de la película
+    // checking if movieId is provided
     if (!movieId) {
       return res.status(400).json({
         status: "error",
@@ -214,7 +228,7 @@ const deleteMovie = async (req, res) => {
       });
     }
 
-    // Intentar eliminar la película por ID
+    //deleting movie by ID
     const movie = await Movie.findByIdAndDelete(movieId);
 
     if (movie) {
@@ -230,7 +244,7 @@ const deleteMovie = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error(error.message); // Registrar el error en la consola
+    console.error(error.message);
     return res.status(500).json({
       status: "error",
       message: "Unable to process request.",
@@ -238,6 +252,10 @@ const deleteMovie = async (req, res) => {
   }
 };
 
-  
-
-module.exports = { getAllMovies,getMovieDetails, addMovie,updateMovieData, deleteMovie };
+module.exports = {
+  getAllMovies,
+  getMovieDetails,
+  addMovie,
+  updateMovieData,
+  deleteMovie,
+};
