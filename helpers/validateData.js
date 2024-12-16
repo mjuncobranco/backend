@@ -1,6 +1,6 @@
 const validator = require("validator");
 const validateData = (params, field = null) => {
-  // Validar un campo específico si se pasa como argumento
+  // validate a specific field if sent as argument
   if (field) {
     if (field === "name" && params.name) {
       if (!validator.isLength(params.name, { min: 2, max: 50 }) || !validator.isAlpha(params.name)) {
@@ -39,10 +39,10 @@ const validateData = (params, field = null) => {
         );
       }
     }
-    return; // No errores para el campo específico
+    return; //no errors on specific field
   }
 
-  // Validar todos los campos (por si no se pasa un campo específico)
+  // validate all fields if they're not send as specific field
   if (params.name) validateData(params, "name");
   if (params.surname) validateData(params, "surname");
   if (params.nick) validateData(params, "nick");

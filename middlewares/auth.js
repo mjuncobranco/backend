@@ -1,9 +1,6 @@
 const jwt = require("jwt-simple");
 const moment = require("moment");
-
-//importing secret key from jwt.js
-const libjwt = require("../helpers/jwt");
-const secret = libjwt.secret;
+const {secret} = require("../helpers/jwt");
 
 //middleware to auth users to access private routes
 exports.auth = (req, res, next) => {
@@ -14,11 +11,11 @@ exports.auth = (req, res, next) => {
     });
   }
 
-  let token = req.headers.authorization.replace(/['"]+/g, "");
-
+  const token = req.headers.authorization.replace(/['"]+/g, "");
+  
   try {
-    let payload = jwt.decode(token, secret);
-    //comprobar expiracion del token
+    const payload = jwt.decode(token, secret);
+    //verifying token expiration 
     if (payload.exp <= moment().unix()) {
       return res.status(401).json({
         status: "error",
@@ -28,13 +25,14 @@ exports.auth = (req, res, next) => {
     }
 
     req.user = payload;
+    
   } catch (error) {
     return res.status(404).json({
       status: "error",
-      message: "Invalid token",
-      error,
+      message: "Invalid token error",
+      error: error.message,
     });
   }
-  //if auth is successfull, access to private route is granted to user
   next();
+ 
 };
