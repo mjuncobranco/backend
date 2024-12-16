@@ -6,7 +6,7 @@ const check = require("../middlewares/auth");
 //get all movies
 router.get("/home/movies", MovieController.getAllMovies);
 //get movie details for a specific movie
-router.get("/home/movies/movie_detail", MovieController.getMovieDetails);
+router.get("/home/movies/:id", MovieController.getMovieDetails);
 //add a movie
 router.post("/home/movies/add_new_movie", check.auth, MovieController.addMovie);
 
