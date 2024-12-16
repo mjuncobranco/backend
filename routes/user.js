@@ -13,10 +13,10 @@ router.post("/login", UserController.login);
 router.get("/auth/favorites",check.auth, UserController.getFavoriteMovies);
 //add a favorite Movie to user
 
-router.post("/auth/favorites", check.auth, UserController.addFavoriteMovie);
+router.post("/auth/favorites/:id", check.auth, UserController.addFavoriteMovie);
 
 // Remove movie from favorites
-router.delete("/auth/favorites", check.auth, UserController.removeFavoriteMovie);
+router.delete("/auth/favorites/:id", check.auth, UserController.removeFavoriteMovie);
 
 //SETTINGS
 //get Userdata
@@ -25,8 +25,10 @@ router.get("/auth/settings",check.auth, UserController.getUserData);
 router.patch("/auth/settings",check.auth, UserController.updateUserSettings);
 // Change avatar
 router.post("/auth/settings/change-avatar", check.auth, upload.single("avatar"), UserController.changeAvatar);
-
-
+// Delete user
+router.delete("/auth/settings/delete-user", check.auth, UserController.deleteUser);
+//get Userdata
+router.get("/auth/users/list",check.auth, UserController.getUsers);
 
 
 module.exports = router;
