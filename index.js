@@ -2,6 +2,7 @@
 const {connection} = require("./database/connection");
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 //testing working app
 console.log("working");
@@ -38,7 +39,12 @@ app.use("/api/users", UserRoutes);
 app.use("/api", MovieRoutes);
 app.use("/api/contact", ContactRoutes);
 
-
+//get public avatars to display
+app.get('/image/:imageName', (req, res) => {
+  const imageName = req.params.imageName;
+  const imagePath = path.join(__dirname, 'public/avatars', imageName);
+  res.sendFile(imagePath);
+});
 
 app.listen(process.env.PORT || 5000, ()=> {
   console.log(`Server running at port ${process.env.PORT}`);
