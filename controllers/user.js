@@ -1,8 +1,9 @@
 const User = require("../models/User");
 const { validateData } = require("../helpers/validateData");
-//importing fs and path
+//importing fs and path for img
 const path = require("path");
 const fs = require("fs");
+//needed for token 
 const bcrypt = require("bcrypt");
 const jwt = require("../helpers/jwt");
 
@@ -23,8 +24,9 @@ const register = async (req, res) => {
       message: "Missing data",
     });
   }
-
+  
   try {
+    params.email = params.email.trim().toLowerCase();
     // Check if the email already exists
     let emailExists = await User.findOne({ email: params.email.toLowerCase() }).exec();
     if (emailExists) {
@@ -35,6 +37,8 @@ const register = async (req, res) => {
     }
 
     // Check if the nick already exists
+    params.nick = params.nick.trim().toLowerCase();
+
     let nickExists = await User.findOne({ nick: params.nick.toLowerCase() }).exec();
     if (nickExists) {
       return res.status(400).json({
@@ -49,7 +53,7 @@ const register = async (req, res) => {
     } catch (error) {
       return res.status(400).json({
         status: "error",
-        message: "Invalid data. Your password must be 8-15 characters in length and include: at least one uppercase letter, one number and one special character.",
+        message: error.message,
       });
     }
 
@@ -105,13 +109,13 @@ const login = async (req, res) => {
     if (!user) {
       return res.status(400).send({
         status: "error",
-        message: "No user found",
+        message: "No user found",//failed to find user by Id
       });
     }
 
     //try to match password entered with pass in db with bcrypt compareSync:
     let pwd = bcrypt.compareSync(params.password, user.password);
-    //si el password es incorrecto lanzar error
+    //error on incorrect password
     if (!pwd) {
       return res.status(400).send({
         status: "error",
@@ -143,21 +147,30 @@ const login = async (req, res) => {
 
 //Private access: Authorized users Only
 
-// Agregar una película a favoritos
+// Add a movie to user's favoriteMovies
 
 const addFavoriteMovie = async (req, res) => {
   try {
-    const userId = req.user.id; // Obteniendo el ID del usuario desde el token
-    const { movieId } = req.body; // Obteniendo el ID de la película desde el cuerpo de la solicitud
-    // Verificar que movieId no esté vacío o inválido
+    const userId = req.user.id; // getting user's id from token
+    const  movieId  = req.params.id; 
+    
+    // checking for invalid or empty movieId
     if (!movieId || movieId.trim() === "") {
       return res.status(400).json({
         status: "error",
         message: "Invalid movie ID.",
       });
     }
-    // Verificar si la película ya está en la lista de favoritos
+    // checking if user exists by user's id
     const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found.",
+      });
+    }
+    // checking if movieId is on user's favoriteMovies list
+    
     if (user.favoriteMovies.includes(movieId)) {
       return res.status(400).json({
         status: "error",
@@ -165,7 +178,7 @@ const addFavoriteMovie = async (req, res) => {
       });
     }
 
-    // Agregar la película a la lista de favoritos
+    // Add movieId to user's favorites
     user.favoriteMovies.push(movieId);
     await user.save();
 
@@ -174,6 +187,7 @@ const addFavoriteMovie = async (req, res) => {
       message: "Movie added to favorites successfully!",
       favoriteMovies: user.favoriteMovies,
     });
+    //failed to add movie to favorites error 
   } catch (err) {
     console.error(err.message);
     return res.status(500).json({
@@ -182,13 +196,13 @@ const addFavoriteMovie = async (req, res) => {
     });
   }
 };
-// Eliminar una película de favoritos
-const removeFavoriteMovie = async (req, res) => {
+    // checking if movieId is on user's favoriteMovies list
+  const removeFavoriteMovie = async (req, res) => {
   const userId = req.user.id;
-  const { movieId } = req.body;
+  const  movieId  = req.params.id;
 
   try {
-    // Verificar que movieId no esté vacío o inválido
+    //checking for invalid or empty movieId
     if (!movieId || movieId.trim() === "") {
       return res.status(400).json({
         status: "error",
@@ -201,11 +215,11 @@ const removeFavoriteMovie = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         status: "error",
-        message: "User not found",
+        message: "User not found",//failed to find user by id on db
       });
     }
 
-    // Verificar si movieId está en la lista de favoritos
+    // checking if movieId is on user's favoriteMovies list
     if (!user.favoriteMovies.includes(movieId)) {
       return res.status(400).json({
         status: "error",
@@ -213,18 +227,19 @@ const removeFavoriteMovie = async (req, res) => {
       });
     }
 
-    // Eliminar la película de la lista de favoritos
+    // checking if movieId is on user's favoriteMovies list
     user.favoriteMovies = user.favoriteMovies.filter(
       (id) => id.toString() !== movieId.toString()
     );
 
     await user.save();
-
+//movieId successfully deleted from favorites
     return res.status(200).json({
       status: "success",
       message: "Movie removed from favorites",
       favoriteMovies: user.favoriteMovies,
     });
+    //failed to delete movie from favorites
   } catch (error) {
     return res.status(500).json({
       status: "error",
@@ -232,48 +247,64 @@ const removeFavoriteMovie = async (req, res) => {
     });
   }
 };
-//get user's Favorite movies
+//get user's favorite Movies
 const getFavoriteMovies = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate("favoriteMovies");
-    // Empty favoriteMovie list error
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found.",//failed to find user by id on db
+      });
+    }
+
+    // on empty favorite movie list show msg
     if (user.favoriteMovies.length === 0) {
       return res.status(200).json({
         status: "success",
-        message: "Empty favoriteMovie list. Add one?.",
+        message: "Empty favoriteMovie list. Add one?",
+        favoriteMovies: [],
       });
     }
-    res
-      .status(200)
-      .json({ status: "success", favoriteMovies: user.favoriteMovies });
+//successfully found favorite movies
+    return res.status(200).json({
+      status: "success",
+      favoriteMovies: user.favoriteMovies,
+    });
+    //failed to find favorite movies
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server error");
+    return res.status(500).json({
+      status: "error",
+      message: "Server error: Unable to retrieve favorite movies.",
+    });
   }
 };
+
 
 //get user's data:
 
 const getUserData = async (req, res) => {
-  const userId = req.user.id; // Obtenemos el ID del usuario desde el token de autenticación
+  const userId = req.user.id; // getting user's id from token
 
   try {
-    // Buscar al usuario por su ID en la base de datos
+    // find user by user id on db
     const user = await User.findById(userId);
 
-    // Verificar si el usuario existe
+    // checking if user exists
     if (!user) {
       return res.status(404).json({
         status: "error",
-        message: "User not found",
+        message: "User not found",//failed to find user by id on db
       });
     }
 
-    // Si el usuario existe, responder con sus datos
+    // successfully found user's data
     return res.status(200).json({
       status: "success",
       user: user,
     });
+    //failed to find user's data
   } catch (error) {
     console.error(error.message);
     return res.status(500).json({
@@ -285,37 +316,54 @@ const getUserData = async (req, res) => {
 
 //update user's settings
 
-// Actualizar configuraciones del usuario
+// updating user's personal data
 
 const updateUserSettings = async (req, res) => {
-  const userId = req.user.id; // Obtenemos el ID del usuario autenticado
-  const params = req.body; // Obtenemos los parámetros de la solicitud
+  const userId = req.user.id; // getting user's id from token
+  const params = req.body; 
+
+  // checking request field is not empty
+  if (!params || Object.keys(params).length === 0) {
+    return res.status(400).json({
+      status: "error",
+      message: "No data provided for updating user settings.",
+    });
+  }
+
+  // filtering field allowed to be updated
+  const allowedFields = ["name", "surname", "nick", "email", "password"];
+  const updates = {};
+  for (const field of allowedFields) {
+    if (params[field]) {
+      updates[field] = params[field];
+    }
+  }
+
+  // checking at least one field is being updated
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({
+      status: "error",
+      message: "No valid fields provided for updating user settings.",
+    });
+  }
 
   try {
-    // Limpiar espacios adicionales en los campos de email y nick
-    if (params.email) params.email = params.email.trim();
-    if (params.nick) params.nick = params.nick.trim();
-    //verificar si el email esta siendo actualizado
-    if (params.email) {
-      const emailExists = await User.findOne({
-        email: params.email.toLowerCase(),
-        _id: { $ne: userId },
-      });
-      if (emailExists) {
-        return res.status(409).json({
-          status: "error",
-          message: "Existing email. Please enter a new email.",
-        });
-      }
+    // validate and trim inputs
+    if (updates.name) {
+      updates.name = updates.name.trim();
+      validateData(updates, "name");
     }
-    // Verificar si el nick está siendo actualizado
-    if (params.nick) {
-      // Buscar si el nick ya existe en la base de datos para otro usuario
-      const nickExists = await User.findOne({
-        nick: params.nick.toLowerCase(),
-        _id: { $ne: userId }, // Excluir el ID del usuario actual
-      });
 
+    if (updates.surname) {
+      updates.surname = updates.surname.trim();
+      validateData(updates, "surname");
+    }
+
+    if (updates.nick) {
+      updates.nick = updates.nick.trim().toLowerCase();
+      validateData(updates, "nick");
+      //checking if existing nick, nick must be unique
+      const nickExists = await User.findOne({ nick: updates.nick, _id: { $ne: userId } });
       if (nickExists) {
         return res.status(409).json({
           status: "error",
@@ -324,47 +372,55 @@ const updateUserSettings = async (req, res) => {
       }
     }
 
-    // Validar los datos ingresados
-    try {
-      validateData(params);
-    } catch (error) {
-      return res.status(400).json({
-        status: "error",
-        message:
-          "Unable to update data. Please review your input and enter valid data.",
-      });
+    if (updates.email) {
+      updates.email = updates.email.trim().toLowerCase();
+      validateData(updates, "email");
+      // checking if existing email, email must be unique
+      const emailExists = await User.findOne({ email: updates.email, _id: { $ne: userId } });
+      if (emailExists) {
+        return res.status(409).json({
+          status: "error",
+          message: "Existing email. Please enter a new email.",
+        });
+      }
     }
 
-    // Encriptar la contraseña solo si está siendo actualizada
-    if (params.password) {
-      params.password = await bcrypt.hash(params.password, 10);
+    if (updates.password) {
+      validateData(updates, "password");
+      // encrypting password before saving
+      updates.password = await bcrypt.hash(updates.password, 10);
     }
 
-    // Actualizar usuario en la base de datos
-    const user = await User.findByIdAndUpdate(userId, params, { new: true });
+    // updating user's data 
+    const user = await User.findByIdAndUpdate(userId, updates, {
+      new: true, // showing updated data
+      runValidators: true, // running data validator
+    });
 
     if (!user) {
       return res.status(404).json({
         status: "error",
-        message: "User not found.",
+        message: "User not found.",//failed to find user
       });
     }
-
+//successfully updated data
     return res.status(200).json({
       status: "success",
       message: "User has been updated.",
       user: user,
     });
+    //failed to update user's data
   } catch (error) {
-    console.error(error.message);
-    return res.status(500).json({
+    console.error("Error updating user settings:", error.message);
+    return res.status(400).json({
       status: "error",
-      message: "Server error.",
+      message: error.message || "Unable to update user settings.",
     });
   }
 };
 
-//change avatar
+
+//change user's avatar
 const changeAvatar = async (req, res) => {
   const userId = req.user.id;
   try {
@@ -372,7 +428,7 @@ const changeAvatar = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         status: "error",
-        message: "User not found",
+        message: "User not found",//failed to find user
       });
     }
     // delete old avatar
@@ -385,24 +441,91 @@ const changeAvatar = async (req, res) => {
         user.avatar
       );
       fs.unlink(oldAvatarPath, (err) => {
-        if (err) console.error("Error deleting old avatar:", err);
+        if (err) console.error("Error deleting old avatar:", err);//failed to delete avatar
       });
     }
 
     // Assign new avatar to user and save in db
     user.avatar = req.file.filename;
-    await user.save();
-
+    user.save().then((user) => console.log(user)).catch((error) => {
+      console.log(error);
+    });
+//updated new avatar successfully
     return res.status(200).json({
       status: "success",
       message: "Avatar updated successfully",
       avatar: user.avatar,
     });
+    //failed to update, error msg
   } catch (error) {
     return res.status(500).json({
       status: "error",
       message: "Server Error",
     });
+  }
+};
+//deleting user: FOR ADMIN ONLY
+const deleteUser = async (req, res) => {
+  try {
+    // Admin action only
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied: You do not have permission to delete a user.",
+      });
+    }
+
+    const userId = req.body.userId; // getting id from req.body
+
+    // checkin if user's id is provided
+    if (!userId) {
+      return res.status(400).json({
+        status: "error",
+        message: "User ID is required.",
+      });
+    }
+
+    // find user by id and delete
+    const user = await User.findByIdAndDelete(userId);
+
+    if (user) {
+      return res.status(200).json({
+        status: "success",
+        message: "User deleted!",//user deleted successfully
+        user,
+      });
+    } else {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found.",//failed to find user
+      });
+    }
+  } catch (error) {
+    console.error(error.message); //showcasing error on console
+    return res.status(500).json({
+      status: "error",
+      message: "Unable to process request.",
+    });
+  }
+};
+
+// getting all users
+const getUsers = async (req, res) => {
+  //Admin action only
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied. Admins only.",
+      });
+    }
+//found users's data successfully
+    const users = await User.find().sort({ createdAt: -1 });
+    res.status(200).json({ status: "success", data: users });
+    //failed to find users' data
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ status: "error", message: "Internal server error" });
   }
 };
 
@@ -415,4 +538,6 @@ module.exports = {
   addFavoriteMovie,
   removeFavoriteMovie,
   changeAvatar,
+  deleteUser,
+  getUsers
 };
