@@ -31,7 +31,7 @@ const UserSchema = Schema(
     },
     avatar: {
       type: String,
-      default: "default.png",
+      default: "https://fastly.picsum.photos/id/482/200/300.jpg?hmac=sZqH9D718kRNYORntdoWP-EehCC83NaK3M-KTWvABIg",
     },
     favoriteMovies: [
       {type: mongoose.Schema.Types.ObjectId,
