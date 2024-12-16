@@ -1,8 +1,6 @@
 //importar dependencias
 const jwt = require("jwt-simple");
 const moment = require("moment");
-
-
 const secret = "CLAVE_SECRETA_DE_MOVIE_APP";
 
 //crear funcion para generar token y exporto
@@ -14,7 +12,8 @@ const createToken = (user) => {
     nick: user.nick,
     email: user.email,
     role: user.role,
-    image: user.image,
+    avatar: user.avatar,
+    favoriteMovies: user.favoriteMovies || [],
     iat: moment().unix(),
     exp: moment().add(30, "days").unix()
     //moment para crear momento de creacion y de expiracion.
