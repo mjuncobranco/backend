@@ -47,8 +47,8 @@ This project is a RESTful API developed using Node.js, Express, and MongoDB, des
 3. Create a `.env` file with the following variables:
    ```env
    PORT=5000
-   MONGO_URI=<mongodb+srv://mongodb:mongodb@movieapp.irg57.mongodb.net/movieApp>
-   JWT_SECRET=<CLAVE_SECRETA_DE_MOVIE_APP>
+   MONGO_URI=<MONGO_BD_URL>
+   JWT_SECRET=<MY_SECRET_JWT>
    ```
 
 4. Start the server:
